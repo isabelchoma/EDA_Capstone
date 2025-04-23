@@ -1,0 +1,224 @@
+---
+title: "README"
+output: 
+  github_document: https://github.com/isabelchoma/EDA_Capstone
+       pandoc_args: ["--wrap=none"]
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,  echo=FALSE}
+# Load datasets 
+
+whitewine_data <- read.csv("/Users/isabel_choma/Desktop/DS_201/Capstone 3/wine+quality/winequality-white.csv", sep = ";")
+redwine_data <- read.csv("/Users/isabel_choma/Desktop/DS_201/Capstone 3/wine+quality/winequality-red.csv", sep = ";")
+
+# Load necessary libraries
+library(tidyverse)
+library(tibble)
+library(ggplot2)
+```
+
+## Business Understanding 
+
+The first step in the data science process according to CRISP-DM is to do some research to gather a business understanding by assessing industry trends and defining the business objectives, meaning what the customer wants to accomplish. Once you have obtained this understanding, you can determine your goals of what kind of insights you hope to extract from the data. 
+
+To develop this business understanding, I did research on what makes a good quality wine. From my research, I found an article on the website of a reputable wine company: https://www.jjbuckley.com/wine-knowledge/blog/the-4-factors-and-4-indicators-of-wine-quality/1009?srsltid=AfmBOopyyzH5XasQn6mkq-2gzgv1O9Y0sXLNl5oosC8edVn05_4JiQ2N 
+
+This article provides a concise and easily understandable overview of four factors that contribute to wine quality as well as four factors that indicate wine quality. 
+
+The four factors listed that contribute to wine quality are climate and weather, temperature and sunlight, growing practices (removing extra leaves and shoots, harvesting early, late, or on time), and winemaking practices (maceration, fermentation, extraction, and aging). An important part of winemaking practices that can affect the quality of the wine is inputs such as sulfur dioxide. This is necessary for preservation, but too much of it can hurt the flavor of the wine. 
+
+The four indicators of wine quality listed are complexity of flavor profile, balance of the five flavor components (acidity, tannins, sugar/sweetness, alochol, and fruit), typicity (how much the wine looks and tastes as it should based on its type), and intensity and finish.
+
+This business understanding process helped me to develop the goals to extract insights about alcohol content, acidity, sulfur dioxide, chlorides, density, and residual sugar from the data set.
+
+Alcohol content can provide information about the fermentation aspect of the winemaking process as well as the balance of the five flavor components (alcohol is one). Density of wine is also impacted by alchohol content, so these could be studied together.
+
+Acidity (fixed acidity, volatile acidity, citric acid) can also provide information about the balance of the five flavor components. 
+
+Sulfur dioxide can provide information about winemaking practices. 
+
+Chloride content depends on the wine's origin, so it can provide information about climate and weather. 
+
+Residual sugar can also provide information about the balance of the five flavor components. 
+
+## Data Understanding 
+
+### Summary of Red and White Wine Datasets
+
+```{r wine-summary, echo=FALSE, message=FALSE}
+wine_summary <- tibble::tibble(
+  Dataset = c("Red Wine", "White Wine"),
+  Samples = c(nrow(redwine_data), nrow(whitewine_data)),
+  Features = c(ncol(redwine_data), ncol(whitewine_data)),
+  Feature_Names = c(paste(colnames(redwine_data), collapse = ", "),
+                    paste(colnames(whitewine_data), collapse = ", "))
+)
+knitr::kable(wine_summary)
+```
+
+### Data Types for Red Wine Dataset
+
+```{r red-types, echo=FALSE}
+red_types <- tibble::tibble(
+  Feature = colnames(redwine_data),
+  Data_Type = sapply(redwine_data, class)
+)
+knitr::kable(red_types)
+```
+
+### Data Types for White Wine Dataset
+
+```{r white-types, echo=FALSE}
+white_types <- tibble::tibble(
+  Feature = colnames(whitewine_data),
+  Data_Type = sapply(whitewine_data, class)
+)
+knitr::kable(white_types)
+```
+
+
+## Data Preparation 
+When loading the data, I had to be sure that I included sep = ";" so that R would read the dataset correctly based on the correct delimiter rather than treating the entire line as a single string. 
+
+I also checked for missing values and found that there were none:
+```{r, echo=FALSE}
+print(sum(is.na(redwine_data)))  # Check for missing values in red wine dataset
+print(sum(is.na(whitewine_data)))  # Check for missing values in white wine dataset
+```
+
+I also looked at the summary statistics to better understand the data:
+
+### Summary Statistics for Red Wine Dataset
+
+```{r, echo=FALSE}
+summary_red <- summary(redwine_data)  # Summary statistics for red wine
+
+# Create a nice table for red wine using knitr::kable
+knitr::kable(summary_red)
+```
+
+### Summary Statistics for White Wine Dataset
+
+```{r, echo=FALSE}
+summary_white <- summary(whitewine_data)  # Summary statistics for white wine
+
+# Create a nice table for white wine using knitr::kable
+knitr::kable(summary_white)
+
+```
+
+From the summary statistics in the data preparation step above, it looked like residual sugar, free sulfur dioxide, and total sulfur dioxide might have some large outliers, so I did some research and found that this is quite common and has real-world explanations tied to winemaking practices and wine styles. Outliers in residual sugar values can be explained by dessert wines or off-dry whites, which are styles with high residual sugar. A large range of values in free suflur dioxide can be explained by the large difference in free sulfur dioxide between white and red wine. Finally, the large outliers in total sulfur dioxide can be explained by wines with long shelf-life goals, because wines meant to last years may have higher sulfur dioxide content to ensure stability.
+
+Due to this research, I determined that I was not concerned about outliers and could proceed. 
+
+## Modeling + Evaluating 
+
+Based on prior knowledge from the business understanding step, I want to ask about how residual sugar and alcohol content affect the quality of wine. So, I am doing EDA for each of these questions.
+
+### Check assumptions before performing EDA
+Normality of groups: 
+```{r,echo=FALSE}
+# Convert quality to a factor
+redwine_data$quality_factor <- as.factor(redwine_data$quality)
+whitewine_data$quality_factor <- as.factor(whitewine_data$quality)
+
+# Run Shapiro-Wilk for alcohol for both red and white
+by(redwine_data$alcohol, redwine_data$quality_factor, shapiro.test)
+by(whitewine_data$alcohol, whitewine_data$quality_factor, shapiro.test)
+
+# Run Shapiro-Wilk for residual sugar for both red and white
+by(redwine_data$residual.sugar, redwine_data$quality_factor, shapiro.test)
+by(whitewine_data$residual.sugar, whitewine_data$quality_factor, shapiro.test)
+
+```
+
+Some of the p-values were high but most were below 0.05, which means that the data is not likely normally distributed, so we should proceed with non-paramteric tests to test statistical significance. 
+
+
+### EDA for Residual sugar 
+Question: Does residual sugar significantly affect wine quality?
+
+Non-parametric test for signficance:
+```{r,echo=FALSE}
+kruskal.test(residual.sugar ~ quality_factor, data = redwine_data)
+kruskal.test(residual.sugar ~ quality_factor, data = whitewine_data)
+```
+p-value < 0.05 -> reject the null hypothesis that residual sugar does not affect wine quality
+
+```{r, echo=FALSE}
+library(ggplot2)
+
+# Boxplot of quality by residual sugar for red wine
+ggplot(redwine_data, aes(x = as.factor(quality), y = residual.sugar)) +
+  geom_boxplot(fill = "lightcoral", color = "black") +
+  labs(
+    title = "Impact of Residual Sugar on Red Wine Quality",
+    x = "Wine Quality Rating",
+    y = "Residual Sugar (g/dm³)"
+  ) +
+  theme_minimal()
+
+# Boxplot of quality by residual sugar for white wine
+ggplot(whitewine_data, aes(x = as.factor(quality), y = residual.sugar)) +
+  geom_boxplot(fill = "lightcoral", color = "black") +
+  labs(
+    title = "Impact of Residual Sugar on White Wine Quality",
+    x = "Wine Quality Rating",
+    y = "Residual Sugar (g/dm³)"
+  ) +
+  theme_minimal()
+
+```
+
+Result: Residual sugar does not seem to effect wine quality rating. All the boxplots are concentrated at the bottom and have outliers with high residual sugar content. This is probably due to the differences in wine types I described above, with dessert wines probably being the outliers with higher sugar content. 
+
+### EDA for Alcohol content
+Question: Does alcohol content significantly affect wine quality?
+
+Non-parametric test for signficance:
+```{r,echo=FALSE}
+kruskal.test(alcohol ~ quality_factor, data = redwine_data)
+kruskal.test(alcohol ~ quality_factor, data = whitewine_data)
+```
+
+p-value < 0.05 -> reject the null hypothesis that alcohol content does not affect wine quality
+
+```{r, echo=FALSE}
+library(ggplot2)
+
+# Boxplot of quality by alcohol content for red wine
+ggplot(redwine_data, aes(x = as.factor(quality), y = alcohol)) +
+  geom_boxplot(fill = "lightgreen", color = "black") +
+  labs(
+    title = "Impact of Alcohol Content on Red Wine Quality",
+    x = "Wine Quality Rating",
+    y = "Alcohol Content (%)"
+  ) +
+  theme_minimal()
+
+#For white wine 
+ggplot(whitewine_data, aes(x = as.factor(quality), y = alcohol)) +
+  geom_boxplot(fill = "lightgreen", color = "black") +
+  labs(
+    title = "Impact of Alcohol Content on White Wine Quality",
+    x = "Wine Quality Rating",
+    y = "Alcohol Content (%)"
+  ) +
+  theme_minimal()
+
+```
+
+Findings: Alcohol content does seem to effect wine quality rating. Higher rated wines seem to have a higher alcohol content. This result is statistically significant.
+
+## Conclusion
+
+I have extracted an actionable insight for my wine producer costumer, which is that wine with higher alcohol content receives a higher quality rating. 
+From this insight, my customer can adjust the fermentation aspect of their winemaking process as well as the balance of the five flavor components, in order to create wine with a higher alcohol content in order to receive higher quality rankings. 
+
+
+
