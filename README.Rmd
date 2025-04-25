@@ -13,8 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r,  echo=FALSE}
 # Load datasets 
 
-whitewine_data <- read.csv("/Users/isabel_choma/Desktop/DS_201/Capstone 3/wine+quality/winequality-white.csv", sep = ";")
-redwine_data <- read.csv("/Users/isabel_choma/Desktop/DS_201/Capstone 3/wine+quality/winequality-red.csv", sep = ";")
+whitewine_data <- read.csv("./wine+quality/winequality-white.csv", sep = ";")
+redwine_data <- read.csv("./wine+quality/winequality-red.csv", sep = ";")
 
 # Load necessary libraries
 library(tidyverse)
