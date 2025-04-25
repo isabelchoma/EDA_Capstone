@@ -7,7 +7,7 @@ always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
 ```{r,  echo=FALSE}
@@ -64,9 +64,25 @@ knitr::kable(wine_summary)
 ### Data Types for Red Wine Dataset
 
 ```{r red-types, echo=FALSE}
+# Vector of individual data types for each feature
+data_types <- c(
+  "Numerical interval",  # fixed acidity
+  "Numerical interval",  # volatile acidity
+  "Numerical interval",  # citric acid
+  "Numerical interval",  # residual sugar
+  "Numerical interval",  # chlorides
+  "Numerical interval",  # free sulfur dioxide
+  "Numerical interval",  # total sulfur dioxide
+  "Numerical interval",  # density
+  "Numerical interval",  # pH
+  "Numerical interval",  # sulphates
+  "Numerical interval",  # alcohol
+  "Ordinal"              # quality
+)
+
 red_types <- tibble::tibble(
   Feature = colnames(redwine_data),
-  Data_Type = sapply(redwine_data, class)
+  Data_Type = data_types
 )
 knitr::kable(red_types)
 ```
@@ -76,7 +92,7 @@ knitr::kable(red_types)
 ```{r white-types, echo=FALSE}
 white_types <- tibble::tibble(
   Feature = colnames(whitewine_data),
-  Data_Type = sapply(whitewine_data, class)
+  Data_Type = data_types
 )
 knitr::kable(white_types)
 ```
@@ -97,7 +113,7 @@ I also looked at the summary statistics to better understand the data:
 
 ```{r, echo=FALSE}
 summary_red <- summary(redwine_data)  # Summary statistics for red wine
-
+summary_red[4,12]<-"NA"
 # Create a nice table for red wine using knitr::kable
 knitr::kable(summary_red)
 ```
@@ -106,6 +122,7 @@ knitr::kable(summary_red)
 
 ```{r, echo=FALSE}
 summary_white <- summary(whitewine_data)  # Summary statistics for white wine
+summary_white[4,12]<-"NA"
 
 # Create a nice table for white wine using knitr::kable
 knitr::kable(summary_white)
@@ -121,23 +138,27 @@ Due to this research, I determined that I was not concerned about outliers and c
 Based on prior knowledge from the business understanding step, I want to ask about how residual sugar and alcohol content affect the quality of wine. So, I am doing EDA for each of these questions.
 
 ### Check assumptions before performing EDA
-Normality of groups: 
+Normality of groups (because quality is ordinal, they will not be normal): 
 ```{r,echo=FALSE}
+# Run Shapiro-Wilk for alcohol for both red and white
+shapiro.test(redwine_data$alcohol)
+shapiro.test(whitewine_data$alcohol)
+
+# For quality 
+shapiro.test(redwine_data$quality)
+shapiro.test(whitewine_data$quality)
+
+# For residual sugar 
+shapiro.test(whitewine_data$residual.sugar)
+shapiro.test(redwine_data$residual.sugar)
+
 # Convert quality to a factor
 redwine_data$quality_factor <- as.factor(redwine_data$quality)
 whitewine_data$quality_factor <- as.factor(whitewine_data$quality)
 
-# Run Shapiro-Wilk for alcohol for both red and white
-by(redwine_data$alcohol, redwine_data$quality_factor, shapiro.test)
-by(whitewine_data$alcohol, whitewine_data$quality_factor, shapiro.test)
-
-# Run Shapiro-Wilk for residual sugar for both red and white
-by(redwine_data$residual.sugar, redwine_data$quality_factor, shapiro.test)
-by(whitewine_data$residual.sugar, whitewine_data$quality_factor, shapiro.test)
-
 ```
 
-Some of the p-values were high but most were below 0.05, which means that the data is not likely normally distributed, so we should proceed with non-paramteric tests to test statistical significance. 
+All p-values were below 0.05, which means that the data is not likely normally distributed, so we should proceed with non-paramteric tests to test statistical significance. 
 
 
 ### EDA for Residual sugar 
